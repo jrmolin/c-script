@@ -1,4 +1,5 @@
 import ply.lex as lex
+import codecs
 
 # List of token names.
 tokens = (
@@ -53,7 +54,7 @@ def t_ID(t):
 
 def t_STRING(t):
     r'"[^"]*"'
-    t.value = t.value[1:-1]
+    t.value = codecs.escape_decode(bytes(t.value[1:-1], "utf-8"))[0].decode("utf-8")
     return t
 
 # A regular expression rule with some action code

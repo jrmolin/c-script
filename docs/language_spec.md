@@ -10,12 +10,14 @@ This document defines the syntax and semantics of the C-Script programming langu
 
 ## 2. Variables
 
-Variables are declared using the `int`, `float`, or `char` keywords.
+Variables are declared using the `int`, `float`, or `char` keywords, and can be assigned a value using the `=` operator.
 
 ```c
-int x;
-float y;
-char z;
+int x = 10;
+float y = 3.14;
+char z = 'a';
+
+x = x + 1;
 ```
 
 ## 3. Control Flow

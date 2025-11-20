@@ -9,7 +9,8 @@ wheels/
 # Virtual environments
 .venv
 
-/test
+/test*
 /a.out*
 
 /parser.out
+/parsetab.py

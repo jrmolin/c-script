@@ -1,0 +1,4 @@
+
+int handle = fopen("test.txt", "w");
+fwrite(handle, "hello world\n");
+fclose(handle);

@@ -17,6 +17,11 @@ tokens = (
     'FREAD',
     'FWRITE',
     'FCLOSE',
+    'COMMA',
+    'INT',
+    'FLOAT',
+    'CHAR',
+    'EQUALS',
 )
 
 # Regular expression rules for simple tokens
@@ -27,6 +32,8 @@ t_DIVIDE  = r'/'
 t_LPAREN  = r'\('
 t_RPAREN  = r'\)'
 t_SEMI    = r';'
+t_COMMA   = r','
+t_EQUALS  = r'='
 
 reserved = {
     'print': 'PRINT',
@@ -34,6 +41,9 @@ reserved = {
     'fread': 'FREAD',
     'fwrite': 'FWRITE',
     'fclose': 'FCLOSE',
+    'int': 'INT',
+    'float': 'FLOAT',
+    'char': 'CHAR',
 }
 
 def t_ID(t):

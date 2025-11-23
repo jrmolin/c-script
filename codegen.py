@@ -1,9 +1,20 @@
 from llvmlite import ir
+import platform
+
+linux_triple = "x86_64-pc-linux-gnu"
+macos_arm_triple = "aarch64-apple-darwin"
+macos_x86_triple = "x86_64-apple-darwin"
 
 class CodeGen:
     def __init__(self):
         self.module = ir.Module(name="c-script")
-        self.module.triple = "arm64-apple-darwin25.1.0"
+        if platform.system().lower() == "linux":
+            self.module.triple = linux_triple
+        elif platform.system().lower() == "darwin":
+            if platform.machine().lower() == "arm64":
+                self.module.triple = macos_arm_triple
+            else:
+                self.module.triple = macos_x86_triple
         self.builder = None
         self.string_constants = {}
         self.symbol_table = {}

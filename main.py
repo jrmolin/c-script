@@ -25,11 +25,11 @@ def main():
         f.write(str(codegen.module))
 
     o_filename = args.output + '.o'
-    subprocess.run(['llc', '-filetype=obj', ll_filename, '-o', o_filename])
+    subprocess.run(['llc-20', '-filetype=obj', ll_filename, '-o', o_filename])
 
-    subprocess.run(['clang', o_filename, '-o', args.output])
+    subprocess.run(['gcc', o_filename, '-o', args.output])
 
-    subprocess.run(['rm', ll_filename, o_filename])
+    #subprocess.run(['rm', ll_filename, o_filename])
 
 
 if __name__ == "__main__":

@@ -32,6 +32,24 @@ class Assign:
         self.name = name
         self.value = value
 
+class If:
+    def __init__(self, condition, then_body, else_body=None):
+        self.condition = condition
+        self.then_body = then_body
+        self.else_body = else_body
+
+class While:
+    def __init__(self, condition, body):
+        self.condition = condition
+        self.body = body
+
+class For:
+    def __init__(self, init, condition, update, body):
+        self.init = init
+        self.condition = condition
+        self.update = update
+        self.body = body
+
 class Program:
     def __init__(self, stmts):
         self.stmts = stmts

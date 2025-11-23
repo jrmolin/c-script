@@ -1,7 +1,7 @@
 import ply.yacc as yacc
 
 from lexer import tokens
-from ast import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier
+from nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For
 
 def p_program(p):
     'program : statement_list'
@@ -18,8 +18,40 @@ def p_statement_list(p):
 def p_statement(p):
     '''statement : var_declaration
                  | assignment
-                 | expression SEMI'''
+                 | expression SEMI
+                 | if_statement
+                 | while_statement
+                 | for_statement'''
     p[0] = p[1]
+
+def p_block(p):
+    'block : LCURLY statement_list RCURLY'
+    p[0] = p[2]
+
+def p_if_statement(p):
+    '''if_statement : IF LPAREN expression RPAREN block
+                    | IF LPAREN expression RPAREN block ELSE block'''
+    if len(p) == 6:
+        p[0] = If(p[3], p[5])
+    else:
+        p[0] = If(p[3], p[5], p[7])
+
+def p_while_statement(p):
+    'while_statement : WHILE LPAREN expression RPAREN block'
+    p[0] = While(p[3], p[5])
+
+def p_for_statement(p):
+    'for_statement : FOR LPAREN for_init expression SEMI assignment_no_semi RPAREN block'
+    p[0] = For(p[3], p[4], p[6], p[8])
+
+def p_for_init(p):
+    '''for_init : assignment
+                | var_declaration'''
+    p[0] = p[1]
+
+def p_assignment_no_semi(p):
+    'assignment_no_semi : ID EQUALS expression'
+    p[0] = Assign(p[1], p[3])
 
 def p_var_declaration(p):
     'var_declaration : type ID EQUALS expression SEMI'
@@ -58,12 +90,25 @@ def p_arg_list(p):
     else:
         p[0] = p[1] + [p[3]]
 
+precedence = (
+    ('left', 'EQ', 'NOT_EQ'),
+    ('left', 'LESS', 'GREATER', 'LESS_EQ', 'GREATER_EQ'),
+    ('left', 'PLUS', 'MINUS'),
+    ('left', 'TIMES', 'DIVIDE'),
+)
+
 # Parsing rules
 def p_expression_binop(p):
     '''expression : expression PLUS expression
                   | expression MINUS expression
                   | expression TIMES expression
-                  | expression DIVIDE expression'''
+                  | expression DIVIDE expression
+                  | expression LESS expression
+                  | expression GREATER expression
+                  | expression LESS_EQ expression
+                  | expression GREATER_EQ expression
+                  | expression EQ expression
+                  | expression NOT_EQ expression'''
     p[0] = BinOp(p[1], p[2], p[3])
 
 def p_expression_group(p):

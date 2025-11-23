@@ -11,6 +11,8 @@ tokens = (
     'DIVIDE',
     'LPAREN',
     'RPAREN',
+    'LCURLY',
+    'RCURLY',
     'PRINT',
     'SEMI',
     'STRING',
@@ -22,7 +24,17 @@ tokens = (
     'INT',
     'FLOAT',
     'CHAR',
+    'IF',
+    'ELSE',
+    'WHILE',
+    'FOR',
     'EQUALS',
+    'LESS',
+    'GREATER',
+    'LESS_EQ',
+    'GREATER_EQ',
+    'NOT_EQ',
+    'EQ',
 )
 
 # Regular expression rules for simple tokens
@@ -32,9 +44,18 @@ t_TIMES   = r'\*'
 t_DIVIDE  = r'/'
 t_LPAREN  = r'\('
 t_RPAREN  = r'\)'
+t_LCURLY  = r'\{'
+t_RCURLY  = r'\}'
 t_SEMI    = r';'
 t_COMMA   = r','
 t_EQUALS  = r'='
+t_LESS    = r'<'
+t_GREATER = r'>'
+t_LESS_EQ = r'<='
+t_GREATER_EQ = r'>='
+t_NOT_EQ = r'!='
+t_EQ = r'=='
+
 
 reserved = {
     'print': 'PRINT',
@@ -45,6 +66,10 @@ reserved = {
     'int': 'INT',
     'float': 'FLOAT',
     'char': 'CHAR',
+    'if': 'IF',
+    'else': 'ELSE',
+    'while': 'WHILE',
+    'for': 'FOR',
 }
 
 def t_ID(t):

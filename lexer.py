@@ -28,6 +28,9 @@ tokens = (
     'ELSE',
     'WHILE',
     'FOR',
+    'DEF',
+    'RETURN',
+    'ARROW',
     'EQUALS',
     'LESS',
     'GREATER',
@@ -55,6 +58,7 @@ t_LESS_EQ = r'<='
 t_GREATER_EQ = r'>='
 t_NOT_EQ = r'!='
 t_EQ = r'=='
+t_ARROW = r'->'
 
 
 reserved = {
@@ -70,6 +74,8 @@ reserved = {
     'else': 'ELSE',
     'while': 'WHILE',
     'for': 'FOR',
+    'def': 'DEF',
+    'return': 'RETURN',
 }
 
 def t_ID(t):

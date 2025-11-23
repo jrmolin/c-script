@@ -48,7 +48,25 @@ while (condition) {
 }
 ```
 
-## 5. Functions
+## 4. User-Defined Functions
+
+Functions are defined using the `def` keyword, followed by the function name, a list of parameters, the return type, and the function body.
+
+```c
+def add(int a, int b) -> int {
+  return a + b;
+}
+```
+
+### 4.1. Return Statement
+
+The `return` statement is used to return a value from a function.
+
+```c
+return expression;
+```
+
+## 5. Built-in Functions
 
 ### 5.1. Print
 

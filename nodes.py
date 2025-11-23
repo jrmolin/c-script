@@ -50,6 +50,17 @@ class For:
         self.update = update
         self.body = body
 
+class FunctionDef:
+    def __init__(self, name, params, return_type, body):
+        self.name = name
+        self.params = params
+        self.return_type = return_type
+        self.body = body
+
+class Return:
+    def __init__(self, value):
+        self.value = value
+
 class Program:
     def __init__(self, stmts):
         self.stmts = stmts

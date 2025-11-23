@@ -1,7 +1,7 @@
 import ply.yacc as yacc
 
 from lexer import tokens
-from nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For
+from nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For, FunctionDef, Return
 
 def p_program(p):
     'program : statement_list'
@@ -21,8 +21,33 @@ def p_statement(p):
                  | expression SEMI
                  | if_statement
                  | while_statement
-                 | for_statement'''
+                 | for_statement
+                 | return_statement
+                 | function_definition'''
     p[0] = p[1]
+
+def p_function_definition(p):
+    'function_definition : DEF ID LPAREN parameters RPAREN ARROW type block'
+    p[0] = FunctionDef(p[2], p[4], p[7], p[8])
+
+def p_parameters(p):
+    '''parameters : parameters COMMA parameter
+                  | parameter
+                  |'''
+    if len(p) == 1:
+        p[0] = []
+    elif len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
+
+def p_parameter(p):
+    'parameter : type ID'
+    p[0] = (p[1], p[2])
+
+def p_return_statement(p):
+    'return_statement : RETURN expression SEMI'
+    p[0] = Return(p[2])
 
 def p_block(p):
     'block : LCURLY statement_list RCURLY'
@@ -76,7 +101,8 @@ def p_func_name(p):
                  | FOPEN
                  | FREAD
                  | FWRITE
-                 | FCLOSE'''
+                 | FCLOSE
+                 | ID'''
     p[0] = p[1]
 
 def p_arg_list(p):
@@ -129,7 +155,10 @@ def p_expression_id(p):
 
 # Error rule for syntax errors
 def p_error(p):
-    print("Syntax error in input!")
+    if p:
+        print(f"Syntax error at '{p.value}', line {p.lineno}")
+    else:
+        print("Syntax error at EOF")
 
 # Build the parser
 parser = yacc.yacc(start='program')

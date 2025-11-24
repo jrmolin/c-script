@@ -1,22 +1,23 @@
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int, c_void, c_float};
+use std::os::raw::{c_char, c_int, c_float};
 use std::fs::File;
 use std::io::{Read, Write};
 use std::ptr;
 use std::sync::Mutex;
 use std::collections::HashMap;
 
-// Global file handle table
-static mut FILE_HANDLES: Option<Mutex<HashMap<i32, File>>> = None;
+use lazy_static::lazy_static;
+
+lazy_static! {
+    // Global file handle table
+    static ref FILE_HANDLES: Mutex<HashMap<i32, File>> = {
+        Mutex::new(HashMap::new())
+    };
+}
 static mut NEXT_HANDLE: i32 = 1;
 
 fn get_handles() -> &'static Mutex<HashMap<i32, File>> {
-    unsafe {
-        if FILE_HANDLES.is_none() {
-            FILE_HANDLES = Some(Mutex::new(HashMap::new()));
-        }
-        FILE_HANDLES.as_ref().unwrap()
-    }
+    &FILE_HANDLES
 }
 
 #[no_mangle]

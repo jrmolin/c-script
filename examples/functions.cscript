@@ -12,5 +12,5 @@ def factorial(int n) -> int {
 int result = add(5, 10);
 print(result);
 
-int fact = factorial(5);
+int fact = factorial(6);
 print(fact);

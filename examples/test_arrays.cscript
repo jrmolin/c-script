@@ -1,0 +1,22 @@
+def main() -> int {
+    print("Testing arrays...");
+
+    int x[5];
+    int i;
+    
+    print("Writing to array...");
+    for (i = 0; i < 5; i = i + 1) {
+        x[i] = i * 10;
+    }
+    
+    print("Reading from array...");
+    for (i = 0; i < 5; i = i + 1) {
+        print(x[i]);
+    }
+    
+    print("Random access...");
+    x[2] = 99;
+    print(x[2]);
+
+    return 0;
+}

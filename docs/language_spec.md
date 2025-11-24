@@ -14,10 +14,15 @@ Variables are declared using the `int`, `float`, or `char` keywords, and can be 
 
 Pointers are supported using the `*` suffix for types, `&` for address-of, and `*` for dereference.
 
+Arrays are supported using the `[]` syntax for declaration and access.
+
 ```c
 int x = 10;
 int* p = &x;
 *p = 20;
+
+int arr[10];
+arr[0] = 5;
 ```
 
 ```c

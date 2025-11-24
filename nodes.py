@@ -32,6 +32,17 @@ class VarDecl:
         self.name = name
         self.value = value
 
+class ArrayDecl:
+    def __init__(self, var_type, name, size):
+        self.var_type = var_type
+        self.name = name
+        self.size = size
+
+class ArrayAccess:
+    def __init__(self, name, index):
+        self.name = name
+        self.index = index
+
 class Assign:
     def __init__(self, target, value):
         self.target = target

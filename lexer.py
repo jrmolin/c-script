@@ -40,6 +40,8 @@ tokens = (
     'EQ',
     'IMPORT',
     'AMPERSAND',
+    'LBRACKET',
+    'RBRACKET',
 )
 
 # Regular expression rules for simple tokens
@@ -62,6 +64,8 @@ t_NOT_EQ = r'!='
 t_EQ = r'=='
 t_ARROW = r'->'
 t_AMPERSAND = r'&'
+t_LBRACKET = r'\['
+t_RBRACKET = r'\]'
 
 
 reserved = {

@@ -210,6 +210,27 @@ class CodeGen:
             value = self.builder.ptrtoint(value, var_type)
         self.builder.store(value, ptr)
 
+    def gen_arraydecl(self, node):
+        element_type = self._get_llvm_type(node.var_type)
+        array_type = ir.ArrayType(element_type, node.size)
+        ptr = self.builder.alloca(array_type, name=node.name)
+        self.symbol_table[node.name] = ptr
+
+    def gen_arrayaccess(self, node):
+        # This returns the VALUE (load) by default
+        ptr = self._get_array_ptr(node)
+        return self.builder.load(ptr)
+
+    def _get_array_ptr(self, node):
+        # Helper to get the pointer to the element
+        array_ptr = self.symbol_table[node.name]
+        index = self.generate(node.index)
+        
+        # GEP: [0, index]
+        # We need two indices: 0 to dereference the array pointer, and index for the element
+        zero = ir.Constant(ir.IntType(32), 0)
+        return self.builder.gep(array_ptr, [zero, index], inbounds=True)
+
     def gen_assign(self, node):
         target = node.target
         ptr = None
@@ -220,6 +241,9 @@ class CodeGen:
             # Dereference assignment: *p = val
             # Evaluate the operand to get the pointer address
             ptr = self.generate(target.operand)
+        elif isinstance(target, type(node) if False else object) and target.__class__.__name__ == 'ArrayAccess':
+            # Array assignment: x[i] = val
+            ptr = self._get_array_ptr(target)
         else:
             raise Exception("Invalid lvalue for assignment")
 

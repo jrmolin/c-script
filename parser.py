@@ -1,7 +1,7 @@
 import ply.yacc as yacc
 
 from lexer import tokens
-from nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For, FunctionDef, Return, Import, UnaryOp
+from nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For, FunctionDef, Return, Import, UnaryOp, ArrayDecl, ArrayAccess
 
 def p_program(p):
     'program : statement_list'
@@ -83,8 +83,16 @@ def p_assignment_no_semi(p):
     p[0] = Assign(p[1], p[3])
 
 def p_var_declaration(p):
-    'var_declaration : type ID EQUALS expression SEMI'
-    p[0] = VarDecl(p[1], p[2], p[4])
+    '''var_declaration : type ID EQUALS expression SEMI
+                       | type ID SEMI
+                       | type ID LBRACKET NUMBER RBRACKET SEMI'''
+    if len(p) == 6:
+        p[0] = VarDecl(p[1], p[2], p[4])
+    elif len(p) == 7:
+        p[0] = ArrayDecl(p[1], p[2], p[4])
+    else:
+        # Uninitialized variable, default to 0
+        p[0] = VarDecl(p[1], p[2], Number(0))
 
 def p_type(p):
     '''type : INT
@@ -162,6 +170,10 @@ def p_expression_unaryop(p):
     '''expression : AMPERSAND expression %prec UNARY
                   | TIMES expression %prec UNARY'''
     p[0] = UnaryOp(p[1], p[2])
+
+def p_expression_array_access(p):
+    'expression : ID LBRACKET expression RBRACKET'
+    p[0] = ArrayAccess(p[1], p[3])
 
 def p_expression_id(p):
     'expression : ID'

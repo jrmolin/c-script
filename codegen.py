@@ -19,27 +19,37 @@ class CodeGen:
         self.string_constants = {}
         self.symbol_table = {}
 
-        # Declare C standard library functions
-        self._declare_printf()
-        self._declare_fopen()
-        self._declare_fwrite()
-        self._declare_fclose()
+        # Declare C standard library functions (replaced by Rust runtime)
+        self._declare_runtime_funcs()
 
-    def _declare_printf(self):
-        printf_ty = ir.FunctionType(ir.IntType(32), [ir.IntType(8).as_pointer()], var_arg=True)
-        self.printf = ir.Function(self.module, printf_ty, name="printf")
+    def _declare_runtime_funcs(self):
+        # void cscript_print_int(int)
+        print_int_ty = ir.FunctionType(ir.VoidType(), [ir.IntType(32)])
+        self.cscript_print_int = ir.Function(self.module, print_int_ty, name="cscript_print_int")
 
-    def _declare_fopen(self):
-        fopen_ty = ir.FunctionType(ir.IntType(8).as_pointer(), [ir.IntType(8).as_pointer(), ir.IntType(8).as_pointer()])
-        self.fopen = ir.Function(self.module, fopen_ty, name="fopen")
+        # void cscript_print_float(float)
+        print_float_ty = ir.FunctionType(ir.VoidType(), [ir.FloatType()])
+        self.cscript_print_float = ir.Function(self.module, print_float_ty, name="cscript_print_float")
 
-    def _declare_fwrite(self):
-        fwrite_ty = ir.FunctionType(ir.IntType(32), [ir.IntType(8).as_pointer(), ir.IntType(32), ir.IntType(32), ir.IntType(8).as_pointer()])
-        self.fwrite = ir.Function(self.module, fwrite_ty, name="fwrite")
+        # void cscript_print_string(char*)
+        print_str_ty = ir.FunctionType(ir.VoidType(), [ir.IntType(8).as_pointer()])
+        self.cscript_print_string = ir.Function(self.module, print_str_ty, name="cscript_print_string")
 
-    def _declare_fclose(self):
-        fclose_ty = ir.FunctionType(ir.IntType(32), [ir.IntType(8).as_pointer()])
-        self.fclose = ir.Function(self.module, fclose_ty, name="fclose")
+        # void* cscript_fopen(char*, char*) -> int
+        fopen_ty = ir.FunctionType(ir.IntType(32), [ir.IntType(8).as_pointer(), ir.IntType(8).as_pointer()])
+        self.cscript_fopen = ir.Function(self.module, fopen_ty, name="cscript_fopen")
+
+        # int cscript_fwrite(int, char*)
+        fwrite_ty = ir.FunctionType(ir.IntType(32), [ir.IntType(32), ir.IntType(8).as_pointer()])
+        self.cscript_fwrite = ir.Function(self.module, fwrite_ty, name="cscript_fwrite")
+
+        # int cscript_fclose(int)
+        fclose_ty = ir.FunctionType(ir.IntType(32), [ir.IntType(32)])
+        self.cscript_fclose = ir.Function(self.module, fclose_ty, name="cscript_fclose")
+        
+        # char* cscript_fread(int, int)
+        fread_ty = ir.FunctionType(ir.IntType(8).as_pointer(), [ir.IntType(32), ir.IntType(32)])
+        self.cscript_fread = ir.Function(self.module, fread_ty, name="cscript_fread")
 
     def _get_string_constant(self, s):
         if s not in self.string_constants:
@@ -169,27 +179,28 @@ class CodeGen:
         if node.name == 'print':
             value = self.generate(node.args[0])
             if isinstance(value.type, ir.IntType):
-                fmt = "%d\n"
+                self.builder.call(self.cscript_print_int, [value])
+            elif isinstance(value.type, ir.FloatType):
+                self.builder.call(self.cscript_print_float, [value])
             else:
-                fmt = "%s\n"
-            fmt_arg = self.builder.bitcast(self._get_string_constant(fmt), ir.IntType(8).as_pointer())
-            self.builder.call(self.printf, [fmt_arg, value])
+                # Assume string or char*
+                self.builder.call(self.cscript_print_string, [value])
         elif node.name == 'fopen':
             filename = self.generate(node.args[0])
             mode = self.generate(node.args[1])
-            return self.builder.call(self.fopen, [filename, mode])
+            return self.builder.call(self.cscript_fopen, [filename, mode])
         elif node.name == 'fwrite':
             handle = self.generate(node.args[0])
-            if isinstance(handle.type, ir.IntType):
-                handle = self.builder.inttoptr(handle, ir.IntType(8).as_pointer())
             data = self.generate(node.args[1])
-            size = ir.Constant(ir.IntType(32), len(node.args[1].value))
-            self.builder.call(self.fwrite, [data, size, ir.Constant(ir.IntType(32), 1), handle])
+            # cscript_fwrite takes (handle, data)
+            self.builder.call(self.cscript_fwrite, [handle, data])
+        elif node.name == 'fread':
+            handle = self.generate(node.args[0])
+            size = self.generate(node.args[1])
+            return self.builder.call(self.cscript_fread, [handle, size])
         elif node.name == 'fclose':
             handle = self.generate(node.args[0])
-            if isinstance(handle.type, ir.IntType):
-                handle = self.builder.inttoptr(handle, ir.IntType(8).as_pointer())
-            self.builder.call(self.fclose, [handle])
+            self.builder.call(self.cscript_fclose, [handle])
         else:
             # User defined function
             if node.name in self.module.globals:

@@ -27,7 +27,14 @@ def main():
     o_filename = args.output + '.o'
     subprocess.run(['llc-20', '-relocation-model=pic', '-filetype=obj', ll_filename, '-o', o_filename])
 
-    subprocess.run(['gcc', o_filename, '-o', args.output])
+    # Build Rust runtime
+    print("Building Rust runtime...")
+    subprocess.run(['cargo', 'build', '--release', '--manifest-path', 'rust/Cargo.toml'], check=True)
+
+    # Link
+    print("Linking...")
+    runtime_lib = 'rust/target/release/libruntime.a'
+    subprocess.run(['gcc', o_filename, runtime_lib, '-o', args.output, '-lpthread', '-ldl'])
 
     subprocess.run(['rm', ll_filename, o_filename])
 

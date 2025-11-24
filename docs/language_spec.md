@@ -12,6 +12,14 @@ This document defines the syntax and semantics of the C-Script programming langu
 
 Variables are declared using the `int`, `float`, or `char` keywords, and can be assigned a value using the `=` operator.
 
+Pointers are supported using the `*` suffix for types, `&` for address-of, and `*` for dereference.
+
+```c
+int x = 10;
+int* p = &x;
+*p = 20;
+```
+
 ```c
 int x = 10;
 float y = 3.14;

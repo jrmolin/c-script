@@ -39,6 +39,7 @@ tokens = (
     'NOT_EQ',
     'EQ',
     'IMPORT',
+    'AMPERSAND',
 )
 
 # Regular expression rules for simple tokens
@@ -60,6 +61,7 @@ t_GREATER_EQ = r'>='
 t_NOT_EQ = r'!='
 t_EQ = r'=='
 t_ARROW = r'->'
+t_AMPERSAND = r'&'
 
 
 reserved = {

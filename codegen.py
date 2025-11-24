@@ -22,6 +22,21 @@ class CodeGen:
         # Declare C standard library functions (replaced by Rust runtime)
         self._declare_runtime_funcs()
 
+    def _get_llvm_type(self, type_str):
+        if type_str.endswith('*'):
+            return self._get_llvm_type(type_str[:-1]).as_pointer()
+        
+        if type_str == 'int':
+            return ir.IntType(32)
+        elif type_str == 'float':
+            return ir.FloatType()
+        elif type_str == 'char':
+            return ir.IntType(8)
+        elif type_str == 'void':
+            return ir.VoidType()
+        else:
+            raise Exception(f"Unknown type: {type_str}")
+
     def _declare_runtime_funcs(self):
         # void cscript_print_int(int)
         print_int_ty = ir.FunctionType(ir.VoidType(), [ir.IntType(32)])
@@ -150,21 +165,12 @@ class CodeGen:
 
     def gen_functiondef(self, node):
         # Return type
-        ret_type = ir.IntType(32) # Default to int
-        if node.return_type == 'float':
-            ret_type = ir.FloatType()
-        elif node.return_type == 'char':
-            ret_type = ir.IntType(8)
+        ret_type = self._get_llvm_type(node.return_type)
             
         # Param types
         param_types = []
         for p_type, p_name in node.params:
-            if p_type == 'int':
-                param_types.append(ir.IntType(32))
-            elif p_type == 'float':
-                param_types.append(ir.FloatType())
-            elif p_type == 'char':
-                param_types.append(ir.IntType(8))
+            param_types.append(self._get_llvm_type(p_type))
                 
         func_type = ir.FunctionType(ret_type, param_types)
         func = ir.Function(self.module, func_type, name=node.name)
@@ -195,13 +201,7 @@ class CodeGen:
         self.builder.ret(value)
 
     def gen_vardecl(self, node):
-        var_type = None
-        if node.var_type == 'int':
-            var_type = ir.IntType(32)
-        elif node.var_type == 'float':
-            var_type = ir.FloatType()
-        elif node.var_type == 'char':
-            var_type = ir.IntType(8)
+        var_type = self._get_llvm_type(node.var_type)
 
         ptr = self.builder.alloca(var_type, name=node.name)
         self.symbol_table[node.name] = ptr
@@ -211,11 +211,48 @@ class CodeGen:
         self.builder.store(value, ptr)
 
     def gen_assign(self, node):
-        ptr = self.symbol_table[node.name]
+        target = node.target
+        ptr = None
+        
+        if isinstance(target, type(node) if False else object) and target.__class__.__name__ == 'Identifier':
+            ptr = self.symbol_table[target.name]
+        elif isinstance(target, type(node) if False else object) and target.__class__.__name__ == 'UnaryOp' and target.op == '*':
+            # Dereference assignment: *p = val
+            # Evaluate the operand to get the pointer address
+            ptr = self.generate(target.operand)
+        else:
+            raise Exception("Invalid lvalue for assignment")
+
         value = self.generate(node.value)
+        # Type casting if needed (e.g. ptr to int)
+        # This is a bit simplistic, but keeps existing behavior
         if isinstance(value.type, ir.PointerType) and isinstance(ptr.type.pointee, ir.IntType):
-            value = self.builder.ptrtoint(value, ptr.type.pointee)
+             # Only cast if we are assigning a pointer to an int variable (which is weird but existing code did it)
+             # But wait, existing code was:
+             # if isinstance(value.type, ir.PointerType) and isinstance(var_type, ir.IntType):
+             #    value = self.builder.ptrtoint(value, var_type)
+             # This was probably for string literals (char*) assigned to int?
+             # Or maybe just safety.
+             # Let's keep it but check types carefully.
+             value = self.builder.ptrtoint(value, ptr.type.pointee)
+             
         self.builder.store(value, ptr)
+
+    def gen_unaryop(self, node):
+        if node.op == '&':
+            # Address-of
+            operand = node.operand
+            if isinstance(operand, type(node) if False else object) and operand.__class__.__name__ == 'Identifier':
+                return self.symbol_table[operand.name]
+            elif isinstance(operand, type(node) if False else object) and operand.__class__.__name__ == 'UnaryOp' and operand.op == '*':
+                # &(*p) -> p
+                return self.generate(operand.operand)
+            else:
+                raise Exception("Cannot take address of rvalue")
+        elif node.op == '*':
+            # Dereference
+            ptr = self.generate(node.operand)
+            return self.builder.load(ptr)
 
     def gen_identifier(self, node):
         ptr = self.symbol_table[node.name]

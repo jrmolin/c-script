@@ -1,7 +1,7 @@
 import ply.yacc as yacc
 
 from lexer import tokens
-from nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For, FunctionDef, Return, Import
+from nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For, FunctionDef, Return, Import, UnaryOp
 
 def p_program(p):
     'program : statement_list'
@@ -79,7 +79,7 @@ def p_for_init(p):
     p[0] = p[1]
 
 def p_assignment_no_semi(p):
-    'assignment_no_semi : ID EQUALS expression'
+    'assignment_no_semi : expression EQUALS expression'
     p[0] = Assign(p[1], p[3])
 
 def p_var_declaration(p):
@@ -89,11 +89,15 @@ def p_var_declaration(p):
 def p_type(p):
     '''type : INT
             | FLOAT
-            | CHAR'''
-    p[0] = p[1]
+            | CHAR
+            | type TIMES'''
+    if len(p) == 2:
+        p[0] = p[1]
+    else:
+        p[0] = p[1] + '*'
 
 def p_assignment(p):
-    'assignment : ID EQUALS expression SEMI'
+    'assignment : expression EQUALS expression SEMI'
     p[0] = Assign(p[1], p[3])
 
 def p_expression_func_call(p):
@@ -125,6 +129,7 @@ precedence = (
     ('left', 'LESS', 'GREATER', 'LESS_EQ', 'GREATER_EQ'),
     ('left', 'PLUS', 'MINUS'),
     ('left', 'TIMES', 'DIVIDE'),
+    ('right', 'UNARY'),
 )
 
 # Parsing rules
@@ -152,6 +157,11 @@ def p_expression_number(p):
 def p_expression_string(p):
     'expression : STRING'
     p[0] = String(p[1])
+
+def p_expression_unaryop(p):
+    '''expression : AMPERSAND expression %prec UNARY
+                  | TIMES expression %prec UNARY'''
+    p[0] = UnaryOp(p[1], p[2])
 
 def p_expression_id(p):
     'expression : ID'

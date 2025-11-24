@@ -1,0 +1,22 @@
+def main() -> int {
+    print("Testing pointers...");
+
+    int x = 10;
+    print("x = ");
+    print(x);
+
+    int* p = &x;
+    print("Reading *p...");
+    print(*p);
+
+    print("Writing *p = 20...");
+    *p = 20;
+    print("x = ");
+    print(x);
+
+    int** pp = &p;
+    print("Reading **pp...");
+    print(**pp);
+
+    return 0;
+}

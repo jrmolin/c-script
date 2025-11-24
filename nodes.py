@@ -16,6 +16,11 @@ class BinOp:
         self.op = op
         self.right = right
 
+class UnaryOp:
+    def __init__(self, op, operand):
+        self.op = op
+        self.operand = operand
+
 class FuncCall:
     def __init__(self, name, args):
         self.name = name
@@ -28,8 +33,8 @@ class VarDecl:
         self.value = value
 
 class Assign:
-    def __init__(self, name, value):
-        self.name = name
+    def __init__(self, target, value):
+        self.target = target
         self.value = value
 
 class If:

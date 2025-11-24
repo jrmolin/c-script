@@ -117,8 +117,9 @@ pub extern "C" fn cscript_fread(handle: c_int, size: c_int) -> *const c_char {
     
     if let Some(file) = map.get_mut(&handle) {
         let mut buffer = vec![0u8; size as usize];
-        match file.read_exact(&mut buffer) {
-            Ok(_) => {
+        match file.read(&mut buffer) {
+            Ok(n) => {
+                buffer.truncate(n);
                 match CString::new(buffer) {
                     Ok(c_string) => c_string.into_raw(),
                     Err(_) => ptr::null(),
@@ -128,5 +129,42 @@ pub extern "C" fn cscript_fread(handle: c_int, size: c_int) -> *const c_char {
         }
     } else {
         ptr::null()
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn cscript_system(command: *const c_char) -> c_int {
+    if command.is_null() {
+        return -1;
+    }
+    
+    let command_str = unsafe { CStr::from_ptr(command).to_string_lossy() };
+    
+    // Use sh -c to execute the command string
+    match std::process::Command::new("sh")
+        .arg("-c")
+        .arg(command_str.as_ref())
+        .status() {
+            Ok(status) => status.code().unwrap_or(-1),
+            Err(_) => -1,
+        }
+}
+
+#[no_mangle]
+pub extern "C" fn cscript_getenv(name: *const c_char) -> *const c_char {
+    if name.is_null() {
+        return ptr::null();
+    }
+    
+    let name_str = unsafe { CStr::from_ptr(name).to_string_lossy() };
+    
+    match std::env::var(name_str.as_ref()) {
+        Ok(val) => {
+             match CString::new(val) {
+                Ok(c_string) => c_string.into_raw(),
+                Err(_) => ptr::null(),
+            }
+        },
+        Err(_) => ptr::null(),
     }
 }

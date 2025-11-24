@@ -61,6 +61,10 @@ class Return:
     def __init__(self, value):
         self.value = value
 
+class Import:
+    def __init__(self, module):
+        self.module = module
+
 class Program:
     def __init__(self, stmts):
         self.stmts = stmts

@@ -38,6 +38,7 @@ tokens = (
     'GREATER_EQ',
     'NOT_EQ',
     'EQ',
+    'IMPORT',
 )
 
 # Regular expression rules for simple tokens
@@ -76,6 +77,7 @@ reserved = {
     'for': 'FOR',
     'def': 'DEF',
     'return': 'RETURN',
+    'import': 'IMPORT',
 }
 
 def t_ID(t):

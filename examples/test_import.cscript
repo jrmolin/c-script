@@ -1,0 +1,35 @@
+import os
+import file
+
+def main() -> int {
+    print("Testing imports...");
+    
+    print("Running system command...");
+    cscript_system("echo 'Hello from system command'");
+    
+    print("Getting env var...");
+    print(cscript_getenv("HOME"));
+    
+    print("Writing to file...");
+    int f = cscript_fopen("test_output.txt", "w");
+    print("File handle (w):");
+    print(f);
+    
+    int w_res = cscript_fwrite(f, "Hello from file module");
+    print("Write result:");
+    print(w_res);
+    
+    cscript_fclose(f);
+    
+    print("Reading from file...");
+    int f2 = cscript_fopen("test_output.txt", "r");
+    print("File handle (r):");
+    print(f2);
+    
+    print("Read content:");
+    print(cscript_fread(f2, 100));
+    
+    cscript_fclose(f2);
+    
+    return 0;
+}

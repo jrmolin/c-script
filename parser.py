@@ -1,7 +1,7 @@
 import ply.yacc as yacc
 
 from lexer import tokens
-from nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For, FunctionDef, Return
+from nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For, FunctionDef, Return, Import
 
 def p_program(p):
     'program : statement_list'
@@ -23,9 +23,13 @@ def p_statement(p):
                  | while_statement
                  | for_statement
                  | return_statement
-                 | function_definition'''
+                 | function_definition
+                 | import_statement'''
     p[0] = p[1]
 
+def p_import_statement(p):
+    'import_statement : IMPORT ID'
+    p[0] = Import(p[2])
 def p_function_definition(p):
     'function_definition : DEF ID LPAREN parameters RPAREN ARROW type block'
     p[0] = FunctionDef(p[2], p[4], p[7], p[8])

@@ -35,6 +35,18 @@ class CodeGen:
         print_str_ty = ir.FunctionType(ir.VoidType(), [ir.IntType(8).as_pointer()])
         self.cscript_print_string = ir.Function(self.module, print_str_ty, name="cscript_print_string")
 
+    def gen_import(self, node):
+        module = node.module
+        if module == "file":
+            self._declare_file_funcs()
+        elif module == "os":
+            self._declare_os_funcs()
+        else:
+            raise Exception(f"Unknown module: {module}")
+
+    def _declare_file_funcs(self):
+        if hasattr(self, 'cscript_fopen'): return
+
         # void* cscript_fopen(char*, char*) -> int
         fopen_ty = ir.FunctionType(ir.IntType(32), [ir.IntType(8).as_pointer(), ir.IntType(8).as_pointer()])
         self.cscript_fopen = ir.Function(self.module, fopen_ty, name="cscript_fopen")
@@ -50,6 +62,17 @@ class CodeGen:
         # char* cscript_fread(int, int)
         fread_ty = ir.FunctionType(ir.IntType(8).as_pointer(), [ir.IntType(32), ir.IntType(32)])
         self.cscript_fread = ir.Function(self.module, fread_ty, name="cscript_fread")
+
+    def _declare_os_funcs(self):
+        if hasattr(self, 'cscript_system'): return
+
+        # int cscript_system(char*)
+        system_ty = ir.FunctionType(ir.IntType(32), [ir.IntType(8).as_pointer()])
+        self.cscript_system = ir.Function(self.module, system_ty, name="cscript_system")
+
+        # char* cscript_getenv(char*)
+        getenv_ty = ir.FunctionType(ir.IntType(8).as_pointer(), [ir.IntType(8).as_pointer()])
+        self.cscript_getenv = ir.Function(self.module, getenv_ty, name="cscript_getenv")
 
     def _get_string_constant(self, s):
         if s not in self.string_constants:
@@ -72,35 +95,58 @@ class CodeGen:
         raise Exception('No gen_{} method'.format(node.__class__.__name__.lower()))
 
     def gen_program(self, node):
-        # Separate functions from statements
-        functions = [stmt for stmt in node.stmts if isinstance(stmt, type(node.stmts[0]) if False else object) and stmt.__class__.__name__ == 'FunctionDef']
-        statements = [stmt for stmt in node.stmts if not (isinstance(stmt, type(node.stmts[0]) if False else object) and stmt.__class__.__name__ == 'FunctionDef')]
-        
-        # To avoid circular import issues or complex type checking, I'll check class name
+        # Separate functions, imports, and other statements
         functions = []
+        imports = []
         statements = []
+        
         for stmt in node.stmts:
             if stmt.__class__.__name__ == 'FunctionDef':
                 functions.append(stmt)
+            elif stmt.__class__.__name__ == 'Import':
+                imports.append(stmt)
             else:
                 statements.append(stmt)
+
+        # Process imports first to declare runtime functions
+        for imp in imports:
+            self.generate(imp)
 
         # Generate user functions
         for func in functions:
             self.generate(func)
 
         # Create a main function for top-level statements
-        main_func_type = ir.FunctionType(ir.IntType(32), [])
-        main_func = ir.Function(self.module, main_func_type, name="main")
-        block = main_func.append_basic_block(name="entry")
-        self.builder = ir.IRBuilder(block)
+        # If there are no top-level statements (other than imports), we might not need this
+        # but existing logic seems to expect it.
+        # However, if the user defined 'main', we shouldn't create another 'main'.
+        # But the current implementation creates 'main' for top-level statements.
+        # If the user defines 'main', it will conflict if we name this one 'main' too?
+        # The existing code names it 'main'.
+        # If the user defines 'main', the existing code generates it in 'functions'.
+        # LLVM might complain about redefinition if we have two 'main's.
+        # But let's stick to fixing the import order first.
+        
+        if statements:
+            main_func_type = ir.FunctionType(ir.IntType(32), [])
+            # If user defined main, we might have a problem. 
+            # But let's assume top-level statements are put into a different entry point or 
+            # the user is not supposed to mix 'def main' and top-level code.
+            # For now, let's keep existing behavior but only if there are statements.
+            
+            # Check if main is already defined by user
+            if "main" not in self.module.globals:
+                 main_func = ir.Function(self.module, main_func_type, name="main")
+                 block = main_func.append_basic_block(name="entry")
+                 self.builder = ir.IRBuilder(block)
+    
+                 # Generate code for each statement
+                 for stmt in statements:
+                     self.generate(stmt)
+    
+                 # Return 0
+                 self.builder.ret(ir.Constant(ir.IntType(32), 0))
 
-        # Generate code for each statement
-        for stmt in statements:
-            self.generate(stmt)
-
-        # Return 0
-        self.builder.ret(ir.Constant(ir.IntType(32), 0))
 
     def gen_functiondef(self, node):
         # Return type
@@ -313,3 +359,6 @@ class CodeGen:
 
     def gen_number(self, node):
         return ir.Constant(ir.IntType(32), node.value)
+
+
+

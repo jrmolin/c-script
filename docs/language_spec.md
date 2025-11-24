@@ -66,27 +66,52 @@ The `return` statement is used to return a value from a function.
 return expression;
 ```
 
-## 5. Built-in Functions
+## 5. Modules and Imports
 
-### 5.1. Print
+C-Script supports modular programming through the `import` statement. Standard library functions are organized into modules.
 
-The `print` function prints the value of an expression to the console.
+```c
+import os
+import file
+```
+
+## 6. Standard Library
+
+### 6.1. Core Functions
+
+The `print` function is available globally without imports.
 
 ```c
 print(expression);
 ```
 
-### 5.2. File I/O
+### 6.2. File Module (`import file`)
 
-C-Script provides basic file I/O operations through a set of built-in functions.
+Provides functions for file input/output.
 
-- `fopen(filename, mode)`: Opens a file specified by `filename` in the given `mode` (e.g., "r", "w"). Returns a file handle (integer) on success, or -1 on error.
-- `fread(handle, size)`: Reads `size` bytes from the file associated with `handle`. Returns a string containing the read data.
-- `fwrite(handle, data)`: Writes the string `data` to the file associated with `handle`.
-- `fclose(handle)`: Closes the file associated with `handle`.
+- `cscript_fopen(filename, mode)`: Opens a file. Mode can be "r" or "w". Returns a file handle (int).
+- `cscript_fread(handle, size)`: Reads `size` bytes from the file. Returns the content as a string.
+- `cscript_fwrite(handle, data)`: Writes `data` string to the file. Returns 1 on success.
+- `cscript_fclose(handle)`: Closes the file.
 
 ```c
-int handle = fopen("myfile.txt", "w");
-fwrite(handle, "Hello, world!");
-fclose(handle);
+import file
+
+int f = cscript_fopen("test.txt", "w");
+cscript_fwrite(f, "Hello");
+cscript_fclose(f);
+```
+
+### 6.3. OS Module (`import os`)
+
+Provides functions for interacting with the operating system.
+
+- `cscript_system(command)`: Executes a shell command. Returns the exit code.
+- `cscript_getenv(name)`: Retrieves the value of an environment variable. Returns the value as a string.
+
+```c
+import os
+
+cscript_system("ls -la");
+print(cscript_getenv("HOME"));
 ```

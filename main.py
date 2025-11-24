@@ -28,6 +28,8 @@ def main():
                             default='a.out')
     arg_parser.add_argument('-d', '--debug', help="don't delete the output files",
                             action='store_true')
+    arg_parser.add_argument('-r', '--run', help="run the output file",
+                            action='store_true')
     args = arg_parser.parse_args()
 
     with open(args.input, 'r') as f:
@@ -56,6 +58,8 @@ def main():
     if not args.debug:
         subprocess.run(['rm', ll_filename, o_filename])
 
+    if args.run:
+        subprocess.run([f"./{args.output}"])
 
 if __name__ == "__main__":
     main()

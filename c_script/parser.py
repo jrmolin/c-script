@@ -1,7 +1,7 @@
 import ply.yacc as yacc
 
-from lexer import tokens
-from nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For, FunctionDef, Return, Import, UnaryOp, ArrayDecl, ArrayAccess
+from .lexer import tokens
+from .nodes import Number, BinOp, Program, FuncCall, String, VarDecl, Assign, Identifier, If, While, For, FunctionDef, Return, Import, UnaryOp, ArrayDecl, ArrayAccess
 
 def p_program(p):
     'program : statement_list'

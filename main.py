@@ -2,9 +2,8 @@ import os
 import sys
 import subprocess
 import argparse
-from lexer import lexer
-from parser import parser
-from codegen import CodeGen
+
+from c_script import lexer, parser, CodeGen
 
 LLC = "llc"
 

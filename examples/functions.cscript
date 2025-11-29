@@ -9,8 +9,33 @@ def factorial(int n) -> int {
     return n * factorial(n - 1);
 }
 
-int result = add(5, 10);
-print(result);
+def main() -> int {
+    print("Testing arrays...");
 
-int fact = factorial(6);
-print(fact);
+    int x[5];
+    int i;
+    
+    print("Writing to array...");
+    for (i = 0; i < 5; i = i + 1) {
+        x[i] = i * 10;
+    }
+    
+    print("Reading from array...");
+    for (i = 0; i < 5; i = i + 1) {
+        print(x[i]);
+    }
+    
+    print("Random access...");
+    x[2] = 99;
+    print(x[2]);
+
+    print("function add(5, 10)...");
+    int result = add(5, 10);
+    print(result);
+
+    print("function factorial(8)...");
+    int fact = factorial(8);
+    print(fact);
+
+    return 0;
+}

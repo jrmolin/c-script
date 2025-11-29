@@ -11,5 +11,6 @@ sync:
     uv sync
 
 clean:
-    rm -f a.out parser.out parsetab.py
-    rm -rf __pycache__ rust/target
+    rm -f a.out c_script/parser.out c_script/parsetab.py
+    rm -rf __pycache__ c_script/__pycache__ rust/target
+    rm -f test.txt

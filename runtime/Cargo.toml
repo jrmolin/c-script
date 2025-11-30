@@ -6,9 +6,8 @@ edition = "2021"
 [dependencies]
 libc = "0.2"
 lazy_static = "1.5"
-nom = "7.1"
 
 
 [lib]
-crate-type = ["staticlib", "rlib"]
+crate-type = ["staticlib"]
 

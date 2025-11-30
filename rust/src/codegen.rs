@@ -117,7 +117,7 @@ impl CodeGen {
             header.push_str(&format!("{} = private unnamed_addr constant [{}_x_i8] c\"{}\\00\", align 1\n", var_name, len, escaped).replace("_x_", " x "));
         }
         
-        header + &self.output
+        self.output.clone() + &header
     }
 
     fn gen_function(&mut self, name: &str, params: &[(Type, String)], ret_type: &Type, body: &[Statement]) {
@@ -134,7 +134,7 @@ impl CodeGen {
         // Allocate space for parameters and store them
         for (i, (ty, param_name)) in params.iter().enumerate() {
             let llvm_ty = self.get_llvm_type(ty);
-            let alloc_name = format!("%{}", param_name); // Shadowing arg with alloc
+            let _alloc_name = format!("%{}", param_name); // Shadowing arg with alloc
             // Actually, args are %0, %1... unless named. Let's assume we can name them in definition?
             // LLVM IR allows named args.
             // But to be safe and match Python logic:

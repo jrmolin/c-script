@@ -29,18 +29,23 @@ def main():
                             action='store_true')
     arg_parser.add_argument('-r', '--run', help="run the output file",
                             action='store_true')
+    arg_parser.add_argument('-c', '--compile', help="compile the output file",
+                            action='store_true')
     args = arg_parser.parse_args()
-
-    with open(args.input, 'r') as f:
-        data = f.read()
-
-    ast = parser.parse(data, lexer=lexer)
-    codegen = CodeGen()
-    codegen.generate(ast)
-
     ll_filename = args.output + '.ll'
-    with open(ll_filename, 'w') as f:
-        f.write(str(codegen.module))
+
+    if args.compile:
+        subprocess.run(["cargo", "run", "--manifest-path", "rust/Cargo.toml", "--bin", "codegen",  "--", args.input, "-o", ll_filename])
+    else:
+        with open(args.input, 'r') as f:
+            data = f.read()
+
+        ast = parser.parse(data, lexer=lexer)
+        codegen = CodeGen()
+        codegen.generate(ast)
+
+        with open(ll_filename, 'w') as f:
+            f.write(str(codegen.module))
 
     o_filename = args.output + '.o'
     subprocess.run([LLC, '-relocation-model=pic', '-filetype=obj', ll_filename, '-o', o_filename])

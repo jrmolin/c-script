@@ -10,6 +10,8 @@ use lazy_static::lazy_static;
 
 pub mod ast;
 pub mod parser;
+pub mod codegen;
+
 
 lazy_static! {
 

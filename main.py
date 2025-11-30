@@ -47,11 +47,11 @@ def main():
 
     # Build Rust runtime
     print("Building Rust runtime...")
-    subprocess.run(['cargo', 'build', '--release', '--manifest-path', 'rust/Cargo.toml'], check=True)
+    subprocess.run(['cargo', 'build', '--release', '--manifest-path', 'runtime/Cargo.toml'], check=True)
 
     # Link
     print("Linking...")
-    runtime_lib = 'rust/target/release/libruntime.a'
+    runtime_lib = 'runtime/target/release/libruntime.a'
     subprocess.run(['gcc', o_filename, runtime_lib, '-o', args.output, '-lpthread', '-ldl'])
 
     if not args.debug:

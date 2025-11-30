@@ -8,9 +8,6 @@ use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 
-pub mod ast;
-pub mod parser;
-
 lazy_static! {
 
     // Global file handle table

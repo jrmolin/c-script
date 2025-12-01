@@ -1,7 +1,7 @@
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take_while},
-    character::complete::{alpha1, alphanumeric1, char, digit1, multispace0},
+    bytes::complete::{tag, take_until, take_while},
+    character::complete::{alpha1, alphanumeric1, char, digit1, multispace1, not_line_ending},
     combinator::{map, map_res, opt, recognize, value},
     multi::{many0, separated_list0},
     sequence::{delimited, pair, preceded},
@@ -12,13 +12,34 @@ use crate::ast::*;
 
 // --- Whitespace and Comments ---
 
+fn line_comment<'a, E: nom::error::ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, &'a str, E> {
+    let (input, _) = tag("//")(input)?;
+    let (input, comment) = not_line_ending(input)?;
+    Ok((input, comment))
+}
+
+fn block_comment<'a, E: nom::error::ParseError<&'a str>>(
+    input: &'a str,
+) -> IResult<&'a str, &'a str, E> {
+    let (input, _) = tag("/*")(input)?;
+    let (input, comment) = take_until("*/")(input)?;
+    let (input, _) = tag("*/")(input)?;
+    Ok((input, comment))
+}
+
 fn ws<'a, F: 'a, O, E: nom::error::ParseError<&'a str>>(
     inner: F,
 ) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
 where
     F: FnMut(&'a str) -> IResult<&'a str, O, E>,
 {
-    delimited(multispace0, inner, multispace0)
+    delimited(
+        many0(alt((multispace1, line_comment, block_comment))),
+        inner,
+        many0(alt((multispace1, line_comment, block_comment))),
+    )
 }
 
 // --- Identifiers and Keywords ---

@@ -1,0 +1,10 @@
+// This is a line comment
+/* This is a block comment */
+def main() -> int {
+    int x = 10; // Inline comment
+    /* Multi-line
+       comment */
+    print("Testing comments...");
+    print(x);
+    return 0;
+}

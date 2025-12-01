@@ -30,3 +30,19 @@ To ensure safety and compatibility across different architectures (specifically 
 - **Integer Handles**: Instead of passing raw `FILE*` pointers (which are 64-bit on 64-bit systems) to the 32-bit C-Script environment, the runtime maps open files to 32-bit integer handles.
 - **Safety**: This prevents memory corruption issues where a 64-bit pointer might be truncated when stored in a 32-bit C-Script integer variable.
 - **Implementation**: The table is implemented using a `Mutex<HashMap<i32, File>>` in Rust, ensuring thread safety (though C-Script is currently single-threaded).
+
+## Memory Management
+
+The runtime provides a safe memory allocation system with bounds checking.
+
+### Allocation Table
+
+Similar to file handles, memory allocations are tracked in a global **Allocation Table** (`Mutex<HashMap<usize, AllocationInfo>>`).
+- **Key**: The raw pointer address (`usize`).
+- **Value**: `AllocationInfo` containing the size of the allocation and its validity status.
+
+### Exported Functions
+
+- `char* cscript_malloc(int size)`: Allocates `size` bytes, records the allocation, and returns a pointer.
+- `int cscript_free(char* ptr)`: Validates the pointer, marks it as invalid (to detect double-frees), and deallocates the memory. Returns 0 on success, -1 on error.
+- `int cscript_check_bounds(char* ptr, int offset)`: Verifies that accessing `ptr + offset` is within the bounds of the allocation. Returns 1 if valid, 0 if invalid.

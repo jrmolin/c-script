@@ -1,0 +1,16 @@
+def main() -> int {
+    print("Testing malloc...");
+    
+    int* ptr = malloc(40);
+    print("Allocated memory");
+    
+    *ptr = 42;
+    print("Wrote value to memory");
+    print(*ptr);
+    
+    int status = free(ptr);
+    print("Freed memory, status:");
+    print(status);
+    
+    return 0;
+}

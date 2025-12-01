@@ -1,6 +1,6 @@
+use c_script::parser::parse_program;
 use std::env;
-use std::fs;
-use c_script::parser::parse_program; // Assuming lib.rs exposes parser
+use std::fs; // Assuming lib.rs exposes parser
 
 fn main() {
     let args: Vec<String> = env::args().collect();

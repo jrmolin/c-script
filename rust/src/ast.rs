@@ -46,9 +46,9 @@ pub enum Statement {
     If(Expression, Box<Vec<Statement>>, Option<Box<Vec<Statement>>>),
     While(Expression, Box<Vec<Statement>>),
     For(
-        Box<Statement>, // Init (Assign or VarDecl)
-        Expression,     // Condition
-        Box<Statement>, // Update (Assign)
+        Box<Statement>,      // Init (Assign or VarDecl)
+        Expression,          // Condition
+        Box<Statement>,      // Update (Assign)
         Box<Vec<Statement>>, // Body
     ),
     Return(Expression),

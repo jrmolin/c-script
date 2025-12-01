@@ -1,17 +1,16 @@
+use std::collections::HashMap;
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int, c_float};
 use std::fs::File;
 use std::io::{Read, Write};
+use std::os::raw::{c_char, c_float, c_int};
 use std::ptr;
 use std::sync::Mutex;
-use std::collections::HashMap;
 
 use lazy_static::lazy_static;
 
 pub mod ast;
-pub mod parser;
 pub mod codegen;
-
+pub mod parser;
 
 lazy_static! {
 
@@ -55,10 +54,10 @@ pub extern "C" fn cscript_fopen(filename: *const c_char, mode: *const c_char) ->
     if filename.is_null() || mode.is_null() {
         return -1;
     }
-    
+
     let filename_str = unsafe { CStr::from_ptr(filename).to_string_lossy() };
     let mode_str = unsafe { CStr::from_ptr(mode).to_string_lossy() };
-    
+
     let file = if mode_str == "w" {
         File::create(filename_str.as_ref())
     } else if mode_str == "r" {
@@ -66,16 +65,18 @@ pub extern "C" fn cscript_fopen(filename: *const c_char, mode: *const c_char) ->
     } else {
         return -1;
     };
-    
+
     match file {
         Ok(f) => {
             let handles = get_handles();
             let mut map = handles.lock().unwrap();
             let handle = unsafe { NEXT_HANDLE };
-            unsafe { NEXT_HANDLE += 1; }
+            unsafe {
+                NEXT_HANDLE += 1;
+            }
             map.insert(handle, f);
             handle
-        },
+        }
         Err(_) => -1,
     }
 }
@@ -85,10 +86,10 @@ pub extern "C" fn cscript_fwrite(handle: c_int, data: *const c_char) -> c_int {
     if data.is_null() {
         return 0;
     }
-    
+
     let handles = get_handles();
     let mut map = handles.lock().unwrap();
-    
+
     if let Some(file) = map.get_mut(&handle) {
         let data_slice = unsafe { CStr::from_ptr(data).to_bytes() };
         match file.write_all(data_slice) {
@@ -104,7 +105,7 @@ pub extern "C" fn cscript_fwrite(handle: c_int, data: *const c_char) -> c_int {
 pub extern "C" fn cscript_fclose(handle: c_int) -> c_int {
     let handles = get_handles();
     let mut map = handles.lock().unwrap();
-    
+
     if map.remove(&handle).is_some() {
         0
     } else {
@@ -117,10 +118,10 @@ pub extern "C" fn cscript_fread(handle: c_int, size: c_int) -> *const c_char {
     if size <= 0 {
         return ptr::null();
     }
-    
+
     let handles = get_handles();
     let mut map = handles.lock().unwrap();
-    
+
     if let Some(file) = map.get_mut(&handle) {
         let mut buffer = vec![0u8; size as usize];
         match file.read(&mut buffer) {
@@ -130,7 +131,7 @@ pub extern "C" fn cscript_fread(handle: c_int, size: c_int) -> *const c_char {
                     Ok(c_string) => c_string.into_raw(),
                     Err(_) => ptr::null(),
                 }
-            },
+            }
             Err(_) => ptr::null(),
         }
     } else {
@@ -143,17 +144,18 @@ pub extern "C" fn cscript_system(command: *const c_char) -> c_int {
     if command.is_null() {
         return -1;
     }
-    
+
     let command_str = unsafe { CStr::from_ptr(command).to_string_lossy() };
-    
+
     // Use sh -c to execute the command string
     match std::process::Command::new("sh")
         .arg("-c")
         .arg(command_str.as_ref())
-        .status() {
-            Ok(status) => status.code().unwrap_or(-1),
-            Err(_) => -1,
-        }
+        .status()
+    {
+        Ok(status) => status.code().unwrap_or(-1),
+        Err(_) => -1,
+    }
 }
 
 #[no_mangle]
@@ -161,15 +163,13 @@ pub extern "C" fn cscript_getenv(name: *const c_char) -> *const c_char {
     if name.is_null() {
         return ptr::null();
     }
-    
+
     let name_str = unsafe { CStr::from_ptr(name).to_string_lossy() };
-    
+
     match std::env::var(name_str.as_ref()) {
-        Ok(val) => {
-             match CString::new(val) {
-                Ok(c_string) => c_string.into_raw(),
-                Err(_) => ptr::null(),
-            }
+        Ok(val) => match CString::new(val) {
+            Ok(c_string) => c_string.into_raw(),
+            Err(_) => ptr::null(),
         },
         Err(_) => ptr::null(),
     }

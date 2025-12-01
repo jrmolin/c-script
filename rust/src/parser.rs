@@ -76,10 +76,10 @@ fn parse_primary_expr(input: &str) -> IResult<&str, Expression> {
 
 fn parse_unary_expr(input: &str) -> IResult<&str, Expression> {
     alt((
-        map(preceded(char('&'), ws(parse_primary_expr)), |e| {
+        map(preceded(char('&'), ws(parse_unary_expr)), |e| {
             Expression::UnaryOp(UnaryOpType::AddressOf, Box::new(e))
         }),
-        map(preceded(char('*'), ws(parse_primary_expr)), |e| {
+        map(preceded(char('*'), ws(parse_unary_expr)), |e| {
             Expression::UnaryOp(UnaryOpType::Deref, Box::new(e))
         }),
         parse_primary_expr,
@@ -176,11 +176,7 @@ fn parse_func_call(input: &str) -> IResult<&str, Expression> {
 
 fn parse_array_access(input: &str) -> IResult<&str, Expression> {
     let (input, id) = identifier(input)?;
-    let (input, index) = delimited(
-        char('['),
-        ws(parse_expression),
-        char(']'),
-    )(input)?;
+    let (input, index) = delimited(char('['), ws(parse_expression), char(']'))(input)?;
     Ok((input, Expression::ArrayAccess(id, Box::new(index))))
 }
 
@@ -189,7 +185,7 @@ fn parse_array_access(input: &str) -> IResult<&str, Expression> {
 fn parse_var_decl(input: &str) -> IResult<&str, Statement> {
     let (input, ty) = ws(parse_type)(input)?;
     let (input, id) = ws(identifier)(input)?;
-    
+
     // Check for array declaration
     if let Ok((input, _)) = ws(char::<&str, nom::error::Error<&str>>('['))(input) {
         let (input, size) = ws(digit1)(input)?;
@@ -204,7 +200,7 @@ fn parse_var_decl(input: &str) -> IResult<&str, Statement> {
 }
 
 fn parse_assign(input: &str) -> IResult<&str, Statement> {
-    let (input, lhs) = ws(parse_primary_expr)(input)?; // Should be lvalue, but simplified here
+    let (input, lhs) = ws(parse_unary_expr)(input)?; // Changed from parse_primary_expr to parse_unary_expr
     let (input, _) = ws(char('='))(input)?;
     let (input, rhs) = ws(parse_expression)(input)?;
     let (input, _) = ws(char(';'))(input)?;
@@ -212,7 +208,7 @@ fn parse_assign(input: &str) -> IResult<&str, Statement> {
 }
 
 fn parse_assign_no_semi(input: &str) -> IResult<&str, Statement> {
-    let (input, lhs) = ws(parse_primary_expr)(input)?;
+    let (input, lhs) = ws(parse_unary_expr)(input)?; // Changed from parse_primary_expr to parse_unary_expr
     let (input, _) = ws(char('='))(input)?;
     let (input, rhs) = ws(parse_expression)(input)?;
     Ok((input, Statement::Assign(lhs, rhs)))
@@ -225,11 +221,7 @@ fn parse_expr_stmt(input: &str) -> IResult<&str, Statement> {
 }
 
 fn parse_block(input: &str) -> IResult<&str, Vec<Statement>> {
-    delimited(
-        ws(char('{')),
-        many0(ws(parse_statement)),
-        ws(char('}')),
-    )(input)
+    delimited(ws(char('{')), many0(ws(parse_statement)), ws(char('}')))(input)
 }
 
 fn parse_if(input: &str) -> IResult<&str, Statement> {
@@ -237,7 +229,10 @@ fn parse_if(input: &str) -> IResult<&str, Statement> {
     let (input, cond) = delimited(char('('), ws(parse_expression), char(')'))(input)?;
     let (input, then_block) = ws(parse_block)(input)?;
     let (input, else_block) = opt(preceded(ws(tag("else")), ws(parse_block)))(input)?;
-    Ok((input, Statement::If(cond, Box::new(then_block), else_block.map(Box::new))))
+    Ok((
+        input,
+        Statement::If(cond, Box::new(then_block), else_block.map(Box::new)),
+    ))
 }
 
 fn parse_while(input: &str) -> IResult<&str, Statement> {
@@ -250,27 +245,25 @@ fn parse_while(input: &str) -> IResult<&str, Statement> {
 fn parse_for(input: &str) -> IResult<&str, Statement> {
     let (input, _) = ws(tag("for"))(input)?;
     let (input, _) = ws(char('('))(input)?;
-    
+
     // Init can be var decl or assignment
     let (input, init) = alt((
         parse_var_decl,
         parse_assign, // parse_assign consumes the semicolon
     ))(input)?;
-    
+
     let (input, cond) = ws(parse_expression)(input)?;
     let (input, _) = ws(char(';'))(input)?;
-    
+
     let (input, update) = ws(parse_assign_no_semi)(input)?;
     let (input, _) = ws(char(')'))(input)?;
-    
+
     let (input, body) = ws(parse_block)(input)?;
-    
-    Ok((input, Statement::For(
-        Box::new(init),
-        cond,
-        Box::new(update),
-        Box::new(body)
-    )))
+
+    Ok((
+        input,
+        Statement::For(Box::new(init), cond, Box::new(update), Box::new(body)),
+    ))
 }
 
 fn parse_return(input: &str) -> IResult<&str, Statement> {
@@ -291,18 +284,18 @@ fn parse_func_def(input: &str) -> IResult<&str, Statement> {
     let (input, name) = ws(identifier)(input)?;
     let (input, params) = delimited(
         char('('),
-        separated_list0(
-            ws(char(',')),
-            pair(ws(parse_type), ws(identifier))
-        ),
-        char(')')
+        separated_list0(ws(char(',')), pair(ws(parse_type), ws(identifier))),
+        char(')'),
     )(input)?;
-    
+
     let (input, _) = ws(tag("->"))(input)?;
     let (input, ret_type) = ws(parse_type)(input)?;
     let (input, body) = ws(parse_block)(input)?;
-    
-    Ok((input, Statement::FunctionDef(name, params, ret_type, Box::new(body))))
+
+    Ok((
+        input,
+        Statement::FunctionDef(name, params, ret_type, Box::new(body)),
+    ))
 }
 
 fn parse_statement(input: &str) -> IResult<&str, Statement> {

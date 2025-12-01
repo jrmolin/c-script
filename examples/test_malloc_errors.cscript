@@ -1,0 +1,17 @@
+def main() -> int {
+    print("Testing malloc error detection...");
+    
+    int* ptr = malloc(40);
+    print("Allocated memory");
+    
+    int status1 = free(ptr);
+    print("First free, status:");
+    print(status1);
+    
+    print("Attempting double free...");
+    int status2 = free(ptr);
+    print("Second free, status:");
+    print(status2);
+    
+    return 0;
+}

@@ -1,7 +1,7 @@
+use c_script::codegen::CodeGen;
+use c_script::parser::parse_program;
 use std::env;
 use std::fs;
-use c_script::parser::parse_program;
-use c_script::codegen::CodeGen;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -34,10 +34,10 @@ fn main() {
             if !remaining.trim().is_empty() {
                 eprintln!("Warning: Unparsed input remaining:\n{}", remaining);
             }
-            
+
             let mut codegen = CodeGen::new();
             let ir = codegen.generate(&program);
-            
+
             if let Some(out_path) = output_file {
                 fs::write(out_path, ir).expect("Unable to write output file");
             } else {

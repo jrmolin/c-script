@@ -128,3 +128,20 @@ import os
 cscript_system("ls -la");
 print(cscript_getenv("HOME"));
 ```
+### 6.4. Memory Management
+
+C-Script provides safe memory allocation with runtime bounds checking.
+
+- `malloc(size)`: Allocates `size` bytes of memory. Returns a pointer (`i8*`) to the allocated memory.
+- `free(ptr)`: Frees the memory pointed to by `ptr`. Returns 0 on success, -1 on error.
+
+Runtime checks are performed to detect:
+- Double-free errors
+- Use-after-free errors (accessing freed memory)
+- Invalid pointer frees (freeing memory not allocated by malloc)
+
+```c
+int* p = malloc(40); // Allocate space for 10 integers
+*p = 100;            // Write to memory
+free(p);             // Free memory
+```

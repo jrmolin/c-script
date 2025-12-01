@@ -43,10 +43,12 @@ impl CodeGen {
         self.emit("target datalayout = \"e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128\"");
         
         // Determine target triple (simplified)
-        #[cfg(target_os = "linux")]
+        #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
         self.emit("target triple = \"x86_64-pc-linux-gnu\"");
-        #[cfg(target_os = "macos")]
+        #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
         self.emit("target triple = \"x86_64-apple-darwin\"");
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        self.emit("target triple = \"aarch64-apple-darwin\"");
 
         self.emit("");
         

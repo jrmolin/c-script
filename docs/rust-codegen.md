@@ -52,6 +52,33 @@ To compile a C-Script file into an executable using the Rust toolchain:
 ## Implementation Details
 
 - **Manual IR Generation**: The generator uses string formatting to produce valid LLVM IR. This approach keeps the build lightweight.
-- **Symbol Table**: A simple symbol table maps variable names to their LLVM register names (pointers).
+- **Symbol Table**: The symbol table maps variable names to tuples of `(IR register name, Type)`. This enables:
+  - **Type-Safe Code Generation**: Variables, parameters, and arrays maintain their type information throughout code generation
+  - **Correct LLVM IR**: Load, store, and GEP (GetElementPtr) instructions use the actual declared types instead of assumptions
+  - **Multi-Type Support**: Proper handling of `int`, `float`, `char`, and pointer types
+  - **Array Type Tracking**: Arrays store their element type, enabling correct array access operations
 - **Control Flow**: `if`, `while`, and `for` loops are implemented using basic blocks and conditional branches (`icmp`, `br`).
 - **Runtime Integration**: The generated code calls into the static `runtime` library for I/O operations, ensuring compatibility with the existing C-Script ecosystem.
+
+### Symbol Table Structure
+
+The symbol table is implemented as:
+```rust
+HashMap<String, (String, Type)>
+```
+
+Where:
+- **Key**: Variable name (e.g., `"x"`, `"arr"`)
+- **Value**: Tuple of:
+  - **IR Register/Pointer Name**: The LLVM temporary or pointer (e.g., `"%t0"`, `"%t5"`)
+  - **Type**: The AST type information (`Type::Int`, `Type::Float`, `Type::Pointer(...)`, etc.)
+
+This structure is populated during:
+- **Function parameter allocation**: Parameters are stored with their declared types
+- **Variable declarations**: Variables are stored with their declared types
+- **Array declarations**: Arrays are stored with `Type::Pointer(element_type)` to track the element type
+
+The type information is then used when:
+- **Loading variables**: Generates the correct `load <type>, <type>* <ptr>` instruction
+- **Storing to variables**: Generates the correct `store <type> <value>, <type>* <ptr>` instruction
+- **Array access**: Generates the correct `getelementptr` instruction with proper element types

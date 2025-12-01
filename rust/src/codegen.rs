@@ -6,7 +6,7 @@ pub struct CodeGen {
     temp_count: i32,
     label_count: i32,
     string_constants: HashMap<String, String>,
-    symbol_table: HashMap<String, String>, // Maps variable names to their IR register/pointer names
+    symbol_table: HashMap<String, (String, Type)>, // Maps variable names to (IR register/pointer name, Type)
 }
 
 impl CodeGen {
@@ -149,7 +149,7 @@ impl CodeGen {
             
             let alloca = self.new_temp(); // Allocate stack space
             self.emit(&format!("  {} = alloca {}, align 4", alloca, llvm_ty));
-            self.symbol_table.insert(param_name.clone(), alloca.clone());
+            self.symbol_table.insert(param_name.clone(), (alloca.clone(), ty.clone()));
             
             self.emit(&format!("  store {} %{}, {}* {}, align 4", llvm_ty, i, llvm_ty, alloca));
         }
@@ -185,7 +185,7 @@ impl CodeGen {
                 let llvm_ty = self.get_llvm_type(ty);
                 let ptr = self.new_temp();
                 self.emit(&format!("  {} = alloca {}, align 4", ptr, llvm_ty));
-                self.symbol_table.insert(name.clone(), ptr.clone());
+                self.symbol_table.insert(name.clone(), (ptr.clone(), ty.clone()));
 
                 if let Some(expr) = init {
                     let (val, val_ty) = self.gen_expression(expr);
@@ -202,25 +202,25 @@ impl CodeGen {
                 // Determine target pointer
                 let (ptr, ptr_ty) = match lhs {
                     Expression::Identifier(name) => {
-                        if let Some(p) = self.symbol_table.get(name) {
-                             // We need to know the type of the variable to know the pointer type
-                             // This is a weakness of this simple symbol table (only stores name).
-                             // We should store (name, type).
-                             // For now, let's guess or assume i32* for simple vars?
-                             // Or we can infer from the value being stored?
-                             // Let's try to look up the type or just use the value's type pointer.
-                             (p.clone(), format!("{}*", val_ty))
+                        if let Some((p, var_type)) = self.symbol_table.get(name) {
+                             let llvm_ty = self.get_llvm_type(var_type);
+                             (p.clone(), format!("{}*", llvm_ty))
                         } else {
                             panic!("Unknown variable: {}", name);
                         }
                     }
                     Expression::ArrayAccess(name, index) => {
-                         let array_ptr = self.symbol_table.get(name).expect("Unknown array").clone();
+                         let (array_ptr, array_type) = self.symbol_table.get(name).expect("Unknown array").clone();
                          let (idx_val, _) = self.gen_expression(index);
                          let elem_ptr = self.new_temp();
-                         // Assuming i32 array for now, need better type tracking
-                         self.emit(&format!("  {} = getelementptr inbounds i32, i32* {}, i32 {}", elem_ptr, array_ptr, idx_val));
-                         (elem_ptr, "i32*".to_string())
+                         // Extract element type from pointer type
+                         let elem_type = if let Type::Pointer(inner) = array_type {
+                             self.get_llvm_type(&inner)
+                         } else {
+                             panic!("Array variable is not a pointer type");
+                         };
+                         self.emit(&format!("  {} = getelementptr inbounds {}, {}* {}, i32 {}", elem_ptr, elem_type, elem_type, array_ptr, idx_val));
+                         (elem_ptr, format!("{}*", elem_type))
                     }
                     _ => panic!("Invalid assignment target"),
                 };
@@ -315,10 +315,8 @@ impl CodeGen {
                 let ptr = self.new_temp();
                 // Array allocation
                 self.emit(&format!("  {} = alloca [{} x {}], align 4", ptr, size, llvm_ty));
-                // We store the pointer to the array start? Or just the array alloca?
-                // For `getelementptr`, we need the pointer to the array.
-                // Let's store the alloca pointer in symbol table.
-                self.symbol_table.insert(name.clone(), ptr.clone());
+                // Store the array pointer with its element type wrapped in Pointer
+                self.symbol_table.insert(name.clone(), (ptr.clone(), Type::Pointer(Box::new(ty.clone()))));
             }
         }
     }
@@ -345,11 +343,11 @@ impl CodeGen {
                 (ptr, "i8*".to_string())
             }
             Expression::Identifier(name) => {
-                if let Some(ptr) = self.symbol_table.get(name).cloned() {
+                if let Some((ptr, var_type)) = self.symbol_table.get(name).cloned() {
                     let val = self.new_temp();
-                    // Assume i32 for now, need type info
-                    self.emit(&format!("  {} = load i32, i32* {}, align 4", val, ptr));
-                    (val, "i32".to_string())
+                    let llvm_ty = self.get_llvm_type(&var_type);
+                    self.emit(&format!("  {} = load {}, {}* {}, align 4", val, llvm_ty, llvm_ty, ptr));
+                    (val, llvm_ty)
                 } else {
                     panic!("Unknown variable: {}", name);
                 }
@@ -420,19 +418,22 @@ impl CodeGen {
                 }
             }
             Expression::ArrayAccess(name, index) => {
-                 let array_ptr = self.symbol_table.get(name).expect("Unknown array").clone();
+                 let (array_ptr, array_type) = self.symbol_table.get(name).expect("Unknown array").clone();
                  let (idx_val, _) = self.gen_expression(index);
                  let elem_ptr = self.new_temp();
-                 // Assuming i32 array
-                 self.emit(&format!("  {} = getelementptr inbounds [10 x i32], [10 x i32]* {}, i32 0, i32 {}", elem_ptr, array_ptr, idx_val));
-                 // Note: The [10 x i32] is hardcoded here because we lost the size info in symbol table.
-                 // We need to store type info in symbol table to do this correctly.
-                 // For now, let's assume pointer decay or just use i32* if we casted it?
-                 // Actually, if we allocated as [N x i32], we need to GEP with [0, index].
+                 // Extract element type from pointer type
+                 let elem_type = if let Type::Pointer(inner) = array_type {
+                     self.get_llvm_type(&inner)
+                 } else {
+                     panic!("Array variable is not a pointer type");
+                 };
+                 // Note: We still need array size info for proper GEP. For now, use pointer arithmetic.
+                 // This works if the array has decayed to a pointer or we use simplified GEP.
+                 self.emit(&format!("  {} = getelementptr inbounds {}, {}* {}, i32 {}", elem_ptr, elem_type, elem_type, array_ptr, idx_val));
                  
                  let val = self.new_temp();
-                 self.emit(&format!("  {} = load i32, i32* {}, align 4", val, elem_ptr));
-                 (val, "i32".to_string())
+                 self.emit(&format!("  {} = load {}, {}* {}, align 4", val, elem_type, elem_type, elem_ptr));
+                 (val, elem_type)
             }
             _ => ("0".to_string(), "i32".to_string()), // Unimplemented
         }

@@ -145,3 +145,17 @@ int* p = malloc(40); // Allocate space for 10 integers
 *p = 100;            // Write to memory
 free(p);             // Free memory
 ```
+
+## 7. Comments
+
+C-Script supports C-style comments:
+
+- **Single-line comments**: Start with `//` and continue to the end of the line.
+- **Block comments**: Start with `/*` and end with `*/`. Can span multiple lines.
+
+```c
+// This is a single-line comment
+
+/* This is a
+   multi-line comment */
+```
